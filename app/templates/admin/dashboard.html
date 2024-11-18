@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2>Админская панель</h2>
+    <h2>Admin Panel</h2>
 
     {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
@@ -14,28 +14,28 @@
         {% endif %}
     {% endwith %}
 
-    <h4>Загрузить новый файл</h4>
+    <h4>Upload New File</h4>
     <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_upload_file') }}">
         <div class="mb-3">
-            <label for="file" class="form-label">Выберите файл</label>
+            <label for="file" class="form-label">Select File</label>
             <input type="file" class="form-control" name="file" required>
         </div>
         <div class="mb-3">
-            <label for="description" class="form-label">Описание</label>
-            <input type="text" class="form-control" name="description" placeholder="Введите описание">
+            <label for="description" class="form-label">Description</label>
+            <input type="text" class="form-control" name="description" placeholder="Enter description">
         </div>
-        <button type="submit" class="btn btn-success">Загрузить файл</button>
+        <button type="submit" class="btn btn-success">Upload File</button>
     </form>
 
-    <h4 class="mt-5">Существующие файлы</h4>
+    <h4 class="mt-5">Existing Files</h4>
     <table class="table">
         <thead>
             <tr>
-                <th>Имя файла</th>
-                <th>Описание</th>
-                <th>Количество загрузок</th>
-                <th>Доступность</th>
-                <th>Действия</th>
+                <th>File Name</th>
+                <th>Description</th>
+                <th>Download Count</th>
+                <th>Availability</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody id="file-list">
@@ -44,13 +44,13 @@
                     <td>{{ file.name }}</td>
                     <td>{{ file.description }}</td>
                     <td>{{ file.download_count }}
-                        <span class="downloads">({{ file.downloads }} скачиваний)</span>
+                        <span class="downloads">({{ file.downloads }} downloads)</span>
                     </td>
                     <td>
                         {% if file.accessible_to_users %}
-                            <span class="badge bg-success">Доступен</span>
+                            <span class="badge bg-success">Available</span>
                         {% else %}
-                            <span class="badge bg-danger">Недоступен</span>
+                            <span class="badge bg-danger">Unavailable</span>
                         {% endif %}
                     </td>
                     <td>
@@ -58,14 +58,14 @@
                             <input type="hidden" name="file_id" value="{{ file.id }}">
                             <button type="submit" name="action" value="toggle_availability" class="btn btn-info">
                                 {% if file.accessible_to_users %}
-                                    Скрыть
+                                    Hide
                                 {% else %}
-                                    Разрешить
+                                    Allow
                                 {% endif %}
                             </button>
                         </form>
-                        <a href="{{ url_for('admin_download_file', file_id=file.id) }}" class="btn btn-primary">Скачать</a>
-                        <button type="button" class="btn btn-danger" id="delete-file-{{ file.id }}" data-file-id="{{ file.id }}" onclick="deleteFile(this)">Удалить</button>
+                        <a href="{{ url_for('admin_download_file', file_id=file.id) }}" class="btn btn-primary">Download</a>
+                        <button type="button" class="btn btn-danger" id="delete-file-{{ file.id }}" data-file-id="{{ file.id }}" onclick="deleteFile(this)">Delete</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -75,10 +75,10 @@
 
 <script>
     function deleteFile(buttonElement) {
-        const fileId = buttonElement.getAttribute('data-file-id');  // Получаем file_id из атрибута
+        const fileId = buttonElement.getAttribute('data-file-id');  // Get file_id from the attribute
     
-        if (confirm('Вы уверены, что хотите удалить этот файл?')) {
-            // Отправляем запрос на удаление
+        if (confirm('Are you sure you want to delete this file?')) {
+            // Send delete request
             fetch('/admin/delete/' + fileId, {
                 method: 'POST',
                 headers: {
@@ -89,15 +89,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Удаляем строку из таблицы
+                    // Remove the row from the table
                     const fileRow = document.getElementById('file-' + fileId);
                     fileRow.remove();
                 } else {
-                    alert('Ошибка при удалении файла.');
+                    alert('Error deleting file.');
                 }
             })
             .catch(error => {
-                console.error('Ошибка:', error);
+                console.error('Error:', error);
             });
         }
     }    

@@ -25,25 +25,25 @@ class User(db.Model, UserMixin):
         return f'<User {self.username}>'
 
     def set_password(self, password):
-        """Метод для установки пароля с хэшированием."""
+        """Method to set the password with hashing."""
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
-        """Метод для проверки пароля."""
+        """Method to check the password."""
         return check_password_hash(self.password, password)
 
     def is_admin(self):
-        """Метод для проверки, является ли пользователь администратором."""
+        """Method to check if the user is an administrator."""
         return self.role == 'admin'
 
     def set_role(self, role):
-        """Метод для изменения роли пользователя."""
+        """Method to change the user's role."""
         allowed_roles = ['admin', 'user']
         if role not in allowed_roles:
-            raise ValueError(f"Недопустимая роль: {role}. Допустимые роли: {allowed_roles}")
+            raise ValueError(f"Invalid role: {role}. Allowed roles: {allowed_roles}")
         self.role = role
         db.session.commit()
 
-   # Метод get_id для Flask-Login
+    # get_id method for Flask-Login
     def get_id(self):
         return str(self.id)

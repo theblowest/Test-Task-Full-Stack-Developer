@@ -12,43 +12,43 @@ from app.user.models import User
 
 load_dotenv()
 
-# Создаем экземпляр Flask приложения
+# Create a Flask app instance
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config.from_pyfile("config.py")
 
-# Настройка логирования
-if not app.debug:  # Логи пишутся только в режиме продакшн
-    # Создаём обработчик для логов
+# Configure logging
+if not app.debug:  # Logs are written only in production mode
+    # Create a handler for logs
     file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
     file_handler.setLevel(logging.INFO)
-    # Формат логов
+    # Log format
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(message)s'
     )
     file_handler.setFormatter(formatter)
-    # Добавляем обработчик в приложение
+    # Add handler to the app
     app.logger.addHandler(file_handler)
 
-# Инициализация базы данных
+# Initialize the database
 db.init_app(app)
 with app.app_context():
     db.create_all()
 
-# Настройка миграций
+# Configure migrations
 migrate = Migrate(app, db, render_as_batch=True)
 
-# Подключение маршрутов
+# Import routes
 from app.user.views import *
 from app.admin.views import *
 from app.main.views import *
 
-# Команда для автоматической миграции
+# Command for automatic migration
 @app.cli.command("migrate")
 def auto_migrate():
     os.system("flask db migrate -m 'Auto-migration'")
     os.system("flask db upgrade")
 
-# Обработчик ошибок
+# Error handler
 @app.errorhandler(werkzeug.exceptions.NotFound)
 def custom_404(exc):
     return "<h1>Custom 404</h1>", exc.code
