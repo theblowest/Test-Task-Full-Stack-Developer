@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Доступные файлы</h1>
+    <ul class="file-list">
+        {% for file in files %}
+        <li class="file-item">
+            <div class="file-info">
+                <strong>{{ file.name }}</strong>
+                <span class="downloads">({{ file.downloads }} скачиваний)</span>
+            </div>
+            <form action="{{ url_for('user_dashboard') }}" method="post" class="download-form">
+                <input type="hidden" name="file_id" value="{{ file.id }}">
+                <button type="submit" class="btn download-btn">Скачать</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% block styles %}
+<style>
+    /* Общий стиль страницы */
+    body {
+        font-family: 'Helvetica Neue', sans-serif;
+        background: linear-gradient(135deg, #f1f1f1, #e2e2e2);
+        margin: 0;
+        padding: 0;
+        color: #333;
+    }
+    
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px;
+    }
+
+    .page-title {
+        text-align: center;
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 30px;
+        font-weight: bold;
+    }
+
+    /* Стили для списка файлов */
+    .file-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .file-item:hover {
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        transform: translateY(-5px);
+    }
+
+    .file-info {
+        font-size: 18px;
+        color: #555;
+        display: flex;
+        align-items: center;
+    }
+
+    .downloads {
+        color: #777;
+        margin-left: 10px;
+        font-style: italic;
+    }
+
+    /* Стили для кнопки */
+    .download-btn {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 30px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .download-btn:hover {
+        background-color: #0056b3;
+    }
+
+    /* Эффект при клике */
+    .download-form {
+        display: inline-block;
+        margin: 0;
+    }
+
+    .download-btn:active {
+        transform: scale(0.98);
+    }
+
+    /* Анимация появления элементов */
+    .fade-in {
+        opacity: 0;
+        animation: fadeIn 0.5s forwards;
+    }
+
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+</style>
+{% endblock %}
+{% endblock %}
