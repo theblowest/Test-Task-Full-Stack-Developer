@@ -71,6 +71,37 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <h4 class="mt-5">Список пользователей</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Имя пользователя</th>
+                <th>Роль</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr id="user-{{ user.id }}">
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_change_role', user_id=user.id) }}" class="d-inline">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <button type="submit" name="action" value="toggle_role" class="btn btn-warning">
+                                {% if user.role == 'user' %}
+                                    Сделать администратором
+                                {% else %}
+                                    Сделать обычным пользователем
+                                {% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <script>
@@ -103,3 +134,4 @@
     }    
 </script>
 {% endblock %}
+
