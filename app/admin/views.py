@@ -10,6 +10,8 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 import logging
 
+from app.user.models import User
+
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -144,24 +146,49 @@ def admin_delete_file(file_id):
 @login_required
 @admin_required
 def admin_dashboard():
-    files = File.query.all()
+    files = File.query.all()  # Список всех файлов
+    users = User.query.all()  # Список всех пользователей
+
     if request.method == 'POST':
+        # Обработка действий с файлами
         file_id = request.form.get('file_id')
         action = request.form.get('action')
         try:
             if action == 'delete' and file_id:
                 file = File.query.get_or_404(file_id)
                 if os.path.exists(file.path):
-                    os.remove(file.path)
-                db.session.delete(file)
+                    os.remove(file.path)  # Удаляем файл из файловой системы
+                db.session.delete(file)  # Удаляем запись о файле из базы данных
                 db.session.commit()
                 flash('Файл успешно удалён.', 'success')
             elif action == 'toggle_availability' and file_id:
                 file = File.query.get_or_404(file_id)
-                file.accessible_to_users = not file.accessible_to_users
+                file.accessible_to_users = not file.accessible_to_users  # Переключаем доступность файла
                 db.session.commit()
                 flash('Доступность файла изменена.', 'success')
         except Exception as e:
             logging.error(f"Ошибка в admin_dashboard: {e}")
             flash('Произошла ошибка при обработке запроса.', 'danger')
-    return render_template('admin/dashboard.html', files=files)
+
+    return render_template('admin/dashboard.html', files=files, users=users)
+
+
+# Обработчик смены роли пользователя
+@app.route('/admin/change_role/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_change_role(user_id):
+    user = User.query.get_or_404(user_id)
+    action = request.form.get('action')
+
+    if action == 'toggle_role':
+        if user.role == 'user':
+            user.role = 'admin'
+            flash(f'{user.username} теперь администратор.', 'success')
+        else:
+            user.role = 'user'
+            flash(f'{user.username} теперь обычный пользователь.', 'success')
+        
+        db.session.commit()
+        
+    return redirect(url_for('admin_dashboard'))
