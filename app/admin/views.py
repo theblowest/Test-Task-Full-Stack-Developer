@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import flash, request, render_template, redirect, send_from_directory, url_for
 from flask_login import login_required, current_user
 from app import app
-from app.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE, UPLOAD_FOLDER
+from app.config import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
 from app.database import db
 from app.files.models import DownloadLog, File
 from werkzeug.utils import secure_filename
@@ -11,6 +11,8 @@ from functools import wraps
 import logging
 
 from app.user.models import User
+
+MAX_FILE_SIZE = 16 * 1024 * 1024
 
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -39,27 +41,42 @@ def admin_required(f):
 def admin_upload_file():
     try:
         uploaded_file = request.files.get('file')
+        
+        # Check if a file is selected
         if not uploaded_file or uploaded_file.filename == '':
             flash('No file selected for upload!', 'danger')
             return redirect(url_for('admin_dashboard'))
-
+        
+        # Check file format
         if not allowed_file(uploaded_file.filename):
             flash('Invalid file format!', 'danger')
             return redirect(url_for('admin_dashboard'))
 
-        if request.content_length and request.content_length > MAX_FILE_SIZE:
-            flash('File is too large!', 'danger')
+        # Check file size
+        if request.content_length is None:
+            flash('File size is not specified.', 'danger')
+            return redirect(url_for('admin_dashboard'))
+
+        if isinstance(request.content_length, int):
+            if request.content_length > MAX_FILE_SIZE:
+                flash('File is too large!', 'danger')
+                return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid file size.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         filename = secure_filename(uploaded_file.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-        # Ensure unique filename if file already exists
+        # Ensure the filename is unique
         if os.path.exists(file_path):
             filename = f"{int(datetime.now().timestamp())}_{filename}"
             file_path = os.path.join(UPLOAD_FOLDER, filename)
 
+        # Save the file to the server
         uploaded_file.save(file_path)
+
+        # Save file information to the database
         new_file = File(
             name=filename,
             path=file_path,
@@ -69,10 +86,14 @@ def admin_upload_file():
         db.session.add(new_file)
         db.session.commit()
         flash('File successfully uploaded!', 'success')
+        
     except Exception as e:
-        logging.error(f"Error uploading file: {e}")
-        flash('An error occurred while uploading the file.', 'danger')
+        # Log the error and display a message
+        logging.error(f"Error uploading file: {str(e)}")
+        flash(f'An error occurred while uploading the file: {str(e)}', 'danger')
+    
     return redirect(url_for('admin_dashboard'))
+
 
 # Admin file download
 @app.route('/admin/download/<int:file_id>', methods=['GET'])
