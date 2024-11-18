@@ -15,24 +15,24 @@ from app.user.models import User
 logging.basicConfig(filename='app.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Проверка расширений
+# Check file extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Декоратор проверки прав администратора
+# Decorator to check admin rights
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            flash('Пожалуйста, войдите в систему.', 'danger')
+            flash('Please log in.', 'danger')
             return redirect(url_for('login'))
         if not hasattr(current_user, 'is_admin') or not current_user.is_admin():
-            flash('У вас нет доступа к этой странице.', 'danger')
+            flash('You do not have access to this page.', 'danger')
             return redirect(url_for('user_dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
-# Загрузка файла
+# Admin file upload
 @app.route('/admin/upload', methods=['POST'])
 @login_required
 @admin_required
@@ -40,21 +40,21 @@ def admin_upload_file():
     try:
         uploaded_file = request.files.get('file')
         if not uploaded_file or uploaded_file.filename == '':
-            flash('Не выбран файл для загрузки!', 'danger')
+            flash('No file selected for upload!', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         if not allowed_file(uploaded_file.filename):
-            flash('Недопустимый формат файла!', 'danger')
+            flash('Invalid file format!', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         if request.content_length and request.content_length > MAX_FILE_SIZE:
-            flash('Файл слишком большой!', 'danger')
+            flash('File is too large!', 'danger')
             return redirect(url_for('admin_dashboard'))
 
         filename = secure_filename(uploaded_file.filename)
         file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-        # Уникальное имя файла, если он уже существует
+        # Ensure unique filename if file already exists
         if os.path.exists(file_path):
             filename = f"{int(datetime.now().timestamp())}_{filename}"
             file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -68,112 +68,112 @@ def admin_upload_file():
         )
         db.session.add(new_file)
         db.session.commit()
-        flash('Файл успешно загружен!', 'success')
+        flash('File successfully uploaded!', 'success')
     except Exception as e:
-        logging.error(f"Ошибка при загрузке файла: {e}")
-        flash('Произошла ошибка при загрузке файла.', 'danger')
+        logging.error(f"Error uploading file: {e}")
+        flash('An error occurred while uploading the file.', 'danger')
     return redirect(url_for('admin_dashboard'))
 
-# Скачивание файла
+# Admin file download
 @app.route('/admin/download/<int:file_id>', methods=['GET'])
 @login_required
 def admin_download_file(file_id):
     try:
-        # Получаем объект файла из базы данных
+        # Get file object from the database
         file = File.query.get_or_404(file_id)
 
-        # Проверяем доступность файла
+        # Check file accessibility
         if not file.accessible_to_users:
-            flash('Вы не имеете доступа к этому файлу.', 'danger')
+            flash('You do not have access to this file.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
-        # Проверяем наличие файла в файловой системе
-        if not os.path.isfile(file.path):  # Проверяем наличие файла по его полному пути
-            flash('Файл не найден на сервере.', 'danger')
+        # Check if file exists on the server
+        if not os.path.isfile(file.path):
+            flash('File not found on the server.', 'danger')
             return redirect(url_for('admin_dashboard'))
 
-        # Увеличиваем количество загрузок
-        file.downloads += 1  # Инкрементируем вручную
-        db.session.commit()  # Сохраняем изменения в базе данных
+        # Increment download count
+        file.downloads += 1
+        db.session.commit()
 
-        # Логируем событие скачивания
+        # Log the download event
         download_log = DownloadLog(user_id=current_user.id, file_id=file.id)
         db.session.add(download_log)
         db.session.commit()
 
-        # Отправляем файл клиенту
-        directory = os.path.dirname(file.path)  # Получаем каталог файла
-        filename = os.path.basename(file.path)  # Получаем имя файла
+        # Send the file to the client
+        directory = os.path.dirname(file.path)
+        filename = os.path.basename(file.path)
         return send_from_directory(directory=directory, path=filename, as_attachment=True)
 
     except Exception as e:
-        logging.error(f"Ошибка при скачивании файла: {e}")
-        flash('Произошла ошибка при скачивании файла.', 'danger')
+        logging.error(f"Error downloading file: {e}")
+        flash('An error occurred while downloading the file.', 'danger')
         return redirect(url_for('admin_dashboard'))
 
-# Удаление файла
+# Admin file deletion
 from flask import request, jsonify
 
 @app.route('/admin/delete/<int:file_id>', methods=['POST'])
 @login_required
 def admin_delete_file(file_id):
     try:
-        # Получаем файл из базы данных
+        # Get the file from the database
         file = File.query.get_or_404(file_id)
 
-        # Проверяем, что файл существует
+        # Check if file exists
         if os.path.exists(file.path):
-            os.remove(file.path)  # Удаляем файл с сервера
+            os.remove(file.path)  # Delete file from the server
         else:
-            flash('Файл не найден на сервере.', 'danger')
+            flash('File not found on the server.', 'danger')
 
-        # Удаляем файл из базы данных
+        # Delete the file from the database
         db.session.delete(file)
         db.session.commit()
 
-        # Возвращаем успешный JSON-ответ
+        # Return a successful JSON response
         return jsonify({'success': True})
 
     except Exception as e:
-        db.session.rollback()  # Откатываем транзакцию при ошибке
-        logging.error(f"Ошибка при удалении файла: {e}")
-        flash('Произошла ошибка при удалении файла.', 'danger')
+        db.session.rollback()  # Rollback the transaction on error
+        logging.error(f"Error deleting file: {e}")
+        flash('An error occurred while deleting the file.', 'danger')
         return jsonify({'success': False})
 
-
-# Панель администратора
+# Admin dashboard
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def admin_dashboard():
-    files = File.query.all()  # Список всех файлов
-    users = User.query.all()  # Список всех пользователей
+    files = File.query.all()  # List of all files
+    users = User.query.all()  # List of all users
 
     if request.method == 'POST':
-        # Обработка действий с файлами
+        # Handle file actions
         file_id = request.form.get('file_id')
         action = request.form.get('action')
         try:
             if action == 'delete' and file_id:
                 file = File.query.get_or_404(file_id)
                 if os.path.exists(file.path):
-                    os.remove(file.path)  # Удаляем файл из файловой системы
-                db.session.delete(file)  # Удаляем запись о файле из базы данных
+                    os.remove(file.path)  # Delete file from the filesystem
+                db.session.delete(file)  # Delete file record from the database
                 db.session.commit()
-                flash('Файл успешно удалён.', 'success')
+                flash('File successfully deleted.', 'success')
             elif action == 'toggle_availability' and file_id:
                 file = File.query.get_or_404(file_id)
-                file.accessible_to_users = not file.accessible_to_users  # Переключаем доступность файла
+                file.accessible_to_users = not file.accessible_to_users  # Toggle file accessibility
                 db.session.commit()
-                flash('Доступность файла изменена.', 'success')
+                flash('File availability changed.', 'success')
         except Exception as e:
-            logging.error(f"Ошибка в admin_dashboard: {e}")
-            flash('Произошла ошибка при обработке запроса.', 'danger')
+            logging.error(f"Error in admin_dashboard: {e}")
+            flash('An error occurred while processing the request.', 'danger')
 
     return render_template('admin/dashboard.html', files=files, users=users)
 
 
-# Обработчик смены роли пользователя
+
+# Handler for changing user role
 @app.route('/admin/change_role/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -184,10 +184,10 @@ def admin_change_role(user_id):
     if action == 'toggle_role':
         if user.role == 'user':
             user.role = 'admin'
-            flash(f'{user.username} теперь администратор.', 'success')
+            flash(f'{user.username} is now an administrator.', 'success')
         else:
             user.role = 'user'
-            flash(f'{user.username} теперь обычный пользователь.', 'success')
+            flash(f'{user.username} is now a regular user.', 'success')
         
         db.session.commit()
         

@@ -1,64 +1,64 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная страница</title>
+    <title>Home Page</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
 <body>
-    <!-- Шапка -->
+    <!-- Header -->
     <header class="header">
         <div class="container">
-            <h1>Добро пожаловать на главную страницу!</h1>
+            <h1>Welcome to the Home Page!</h1>
             <nav class="nav">
                 <ul class="nav-list">
                     
                     {% if current_user.is_authenticated %}
-                        <li>Роль пользователя: {{ current_user.role }} </li>
-                        <li><a href="{{ url_for('user_dashboard') }}" class="btn btn-primary">Файлы</a></li>
+                        <li>User role: {{ current_user.role }} </li>
+                        <li><a href="{{ url_for('user_dashboard') }}" class="btn btn-primary">Files</a></li>
                         
                         {% if current_user.role == 'admin' %}
-                            <li><a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Админ-панель</a></li>
+                            <li><a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Admin Panel</a></li>
                         {% endif %}
                         
-                        <li><a href="{{ url_for('logout') }}" class="btn btn-primary">Выйти</a></li>
+                        <li><a href="{{ url_for('logout') }}" class="btn btn-primary">Logout</a></li>
                     {% else %}
-                        <li><a href="{{ url_for('login') }}" class="btn btn-info">Войти</a></li>
-                        <li><a href="{{ url_for('register') }}" class="btn btn-success">Регистрация</a></li>
+                        <li><a href="{{ url_for('login') }}" class="btn btn-info">Login</a></li>
+                        <li><a href="{{ url_for('register') }}" class="btn btn-success">Register</a></li>
                     {% endif %}
                 </ul>
             </nav>
         </div>
     </header>
 
-    <!-- Основной контент -->
+    <!-- Main content -->
     <main class="main-content">
         <div class="container">
             {% if current_user.is_authenticated %}
                 <div class="dashboard-welcome">
-                    <h2>Вітаємо, {{ current_user.first_name }}!</h2>
-                    <p>Вы можете просматривать файлы или перейти в админ-панель, если у вас есть соответствующие права.</p>
+                    <h2>Welcome, {{ current_user.first_name }}!</h2>
+                    <p>You can browse files or go to the admin panel if you have the appropriate rights.</p>
                 </div>
             {% else %}
                 <div class="welcome-message">
-                    <h2>Что вы хотите сделать?</h2>
-                    <p>Для доступа к файлам, пожалуйста, зарегистрируйтесь или войдите в систему.</p>
+                    <h2>What would you like to do?</h2>
+                    <p>To access files, please register or log in.</p>
                 </div>
             {% endif %}
         </div>
     </main>
 
-    <!-- Подвал -->
+    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Ваш сайт для обмена файлами. <a href="#">Политика конфиденциальности</a></p>
+            <p>&copy; 2024 Your file-sharing website. <a href="#">Privacy Policy</a></p>
         </div>
     </footer>
 
-    <!-- Скрипты -->
+    <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 

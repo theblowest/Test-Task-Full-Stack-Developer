@@ -8,7 +8,7 @@ from app.user.forms import LoginForm, RegistrationForm
 from app.user.models import User
 from flask_login import login_user, current_user
 
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'app', 'uploads')  # Путь к папке app/uploads
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'app', 'uploads')  # Path to the 'app/uploads' folder
 
 @app.route("/users")
 def get_users():
@@ -26,33 +26,33 @@ def user_detail(user_id):
 @login_required
 def user_dashboard():
 
-    # Получаем список всех файлов, доступных для пользователей
+    # Get the list of all files available to users
     files = File.query.filter_by(accessible_to_users=True).all()
 
-    # Если пользователь отправил POST-запрос (скачивание файла)
+    # If the user sent a POST request (file download)
     if request.method == 'POST':
-        file_id = request.form.get('file_id')  # Получаем ID файла из формы
+        file_id = request.form.get('file_id')  # Get the file ID from the form
         file = File.query.get(file_id)
 
         if file and file.accessible_to_users:
-            file_path = os.path.join(UPLOAD_FOLDER, file.path)  # Формируем полный путь к файлу
+            file_path = os.path.join(UPLOAD_FOLDER, file.path)  # Construct the full file path
 
-            if os.path.exists(file_path):  # Проверяем, существует ли файл
+            if os.path.exists(file_path):  # Check if the file exists
                 try:
-                    # Логируем скачивание
+                    # Log the download
                     log = DownloadLog(user_id=current_user.id, file_id=file.id)
                     db.session.add(log)
-                    file.increment_downloads()  # Увеличиваем количество скачиваний
+                    file.increment_downloads()  # Increase the download count
                     db.session.commit()
 
-                    # Отправляем файл пользователю
+                    # Send the file to the user
                     return send_file(file_path, as_attachment=True)
                 except Exception as e:
-                    flash(f"Произошла ошибка при скачивании: {e}", "error")
+                    flash(f"An error occurred while downloading: {e}", "error")
             else:
-                flash("Файл не найден.", "error")
+                flash("File not found.", "error")
 
-    # Рендеринг страницы с файлами
+    # Render the page with files
     return render_template('users/dashboard.html', files=files)
 
 @app.route('/download/<int:file_id>', methods=['GET'])
@@ -60,13 +60,13 @@ def user_dashboard():
 def download_user_file(file_id):
     file = File.query.get_or_404(file_id)
 
-    # Проверка прав доступа через FileAccess
+    # Check access rights through FileAccess
     access_record = FileAccess.query.filter_by(file_id=file.id, user_id=current_user.id).first()
     if not access_record:
-        flash('У вас нет прав для доступа к этому файлу.', 'danger')
+        flash('You do not have permission to access this file.', 'danger')
         return redirect(url_for('user_dashboard'))
 
-    # Логирование скачивания
+    # Log the download
     download_log = DownloadLog(user_id=current_user.id, file_id=file.id)
     db.session.add(download_log)
     db.session.commit()
@@ -74,8 +74,7 @@ def download_user_file(file_id):
     return send_from_directory(directory=UPLOAD_FOLDER, filename=file.name, as_attachment=True)
 
 
-
-# Список файлов для пользователя
+# List of files for the user
 @app.route('/files', methods=['GET'])
 @login_required
 def file_list():

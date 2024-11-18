@@ -11,36 +11,36 @@ from sqlalchemy.orm.exc import NoResultFound
 from functools import wraps
 from flask_login import login_manager
 
-# Настроим логирование
+# Set up logging
 logging.basicConfig(level=logging.INFO)
-# Настройка Flask-Login
+# Flask-Login setup
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.init_app(app)
 
-# Функция загрузки пользователя по ID
+# Function to load a user by ID
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Загрузка пользователя
+# Load user
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 def get_file_by_id(file_id):
     try:
-        # Попытка найти файл по его ID
+        # Attempt to find the file by its ID
         file = File.query.get(file_id)
         if file is None:
-            raise NoResultFound  # Если файл не найден, выбрасываем исключение
+            raise NoResultFound  # If the file is not found, raise an exception
         return file
     except NoResultFound:
-        # Логирование ошибки, если файл не найден
-        logging.error(f"Файл с ID {file_id} не найден.")
+        # Log an error if the file is not found
+        logging.error(f"File with ID {file_id} not found.")
         return None
 
-# Декоратор для проверки роли пользователя
+# Decorator to check user role
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -51,37 +51,36 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Главная страница
+# Home page
 @app.route('/')
 def home():
     return render_template("index.html") 
 
-
-# Страница входа
+# Login page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()  # Используем форму для логина
+    form = LoginForm()  # Use the login form
     if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
         user = User.query.filter_by(username=username).first()
 
-        # Проверяем, существует ли пользователь и правильность пароля
+        # Check if the user exists and the password is correct
         if user and check_password_hash(user.password, password):
-            login_user(user)  # Используем Flask-Login для входа
+            login_user(user)  # Use Flask-Login to log the user in
             logging.info(f"User {username} logged in successfully with role {user.role}.")
             if user.role == 'admin' or current_user.is_admin():
-                return redirect(url_for('admin_dashboard'))  # Страница админа
+                return redirect(url_for('admin_dashboard'))  # Admin dashboard page
             else:
-                return redirect(url_for('user_dashboard'))  # Страница пользователя
+                return redirect(url_for('user_dashboard'))  # User dashboard page
         else:
             logging.warning(f"Failed login attempt for {username}. Incorrect username or password.")
-            flash("Неверное имя пользователя или пароль", "error")
-            return redirect(url_for('login'))  # Перенаправление на страницу логина
+            flash("Incorrect username or password", "error")
+            return redirect(url_for('login'))  # Redirect back to the login page
 
     return render_template("users/login.html", form=form)
 
-# Страница регистрации
+# Registration page
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm() 
@@ -90,16 +89,16 @@ def register():
         username = form.username.data
         password = form.password.data
         
-        # Проверяем, существует ли уже пользователь с таким именем
+        # Check if a user with this username already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             flash("Username already exists! Please choose a different one.", "error")
             return redirect(url_for('register'))
         
-        # Хешируем пароль
+        # Hash the password
         hashed_password = generate_password_hash(password)
         
-        # Создаем нового пользователя
+        # Create a new user
         user = User(first_name=first_name, username=username, password=hashed_password, role='user')
         
         try:
@@ -122,9 +121,9 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for('home'))
 
-# Страница списка файлов для пользователей
+# User files list page
 @app.route('/files')
 @login_required
 def files():
-    file_list = File.query.all()  # Получаем список всех файлов
+    file_list = File.query.all()  # Get a list of all files
     return render_template("files/list.html", files=file_list)

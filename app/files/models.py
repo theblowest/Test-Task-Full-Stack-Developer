@@ -14,8 +14,8 @@ class File(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref='uploaded_files')
     
-    # Обновленные отношения с использованием back_populates
-    download_logs = db.relationship('DownloadLog', back_populates='file', cascade='all, delete-orphan' ,lazy=True)
+    # Updated relationships using back_populates
+    download_logs = db.relationship('DownloadLog', back_populates='file', cascade='all, delete-orphan', lazy=True)
 
     def __repr__(self):
         return f'<File {self.name}>'
@@ -34,7 +34,7 @@ class DownloadLog(db.Model):
     file_id = db.Column(db.Integer, db.ForeignKey('files.id'), nullable=False)
     download_time = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
-    # Обновленные отношения с использованием back_populates
+    # Updated relationships using back_populates
     user = db.relationship('User', backref='download_activity')
     file = db.relationship('File', back_populates='download_logs')
 
